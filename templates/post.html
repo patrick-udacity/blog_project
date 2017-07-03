@@ -1,0 +1,21 @@
+<div class="post">
+  <div class="post-heading">
+    <div class="post-title">
+       <a href="/blog/{{p.key().id()}}" 
+          title="Open blog entry # {{p.key().id()}}." 
+          class="post-link">{{p.subject}}
+      </a>
+    </div>
+    <div class="post-author"> 
+      submitted by: {{p.author}}
+    </div> 
+    <div class="post-date">
+      {{p.created.strftime("%b %d, %Y")}}
+    </div>
+ 
+  </div>
+
+  <div class="post-content">
+    {{p._render_text | safe}}
+  </div>
+</div>
