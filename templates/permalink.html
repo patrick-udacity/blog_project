@@ -1,5 +1,18 @@
-{% extends "base.html" %}
-
-{% block content %}
-  {{post.render() | safe}}
+{% extends "base.html" %} {% block content %} {{post.render() | safe}}
+<div >Likes: {{post.likes}}{{post.liked_by}}</div>
+<form method="post">
+  <div class="post-likes likes">
+    <input type="image" name = "like_action" title="Click to Like." 
+      value = "like" src="/images/like.png" height="40">
+    <input type = "hidden" name = "form_name" value = "like">
+  </div>
+</form>
+<form method="post">
+  <div class="post-likes ">
+    <input type="image" name = "unlike_action" title="Click to Unlike." 
+      value = "unlike"  src="/images/dislike.png" height="40">
+        <input type = "hidden" name = "form_name" value = "unlike">
+  </div>
+</form>
+<div class = "error">{{error}}</div><div class = "message">{{confirmation}}</div>
 {% endblock %}

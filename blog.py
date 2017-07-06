@@ -130,6 +130,8 @@ class Post(db.Model):
     author = db.StringProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+    likes = db.IntegerProperty(required = False)
+    liked_by = db.StringProperty(required = False)
     
 
     def render(self):
@@ -142,6 +144,8 @@ class BlogFront(BlogHandler):
         self.render('front.html', posts = posts)
 
 class PostPage(BlogHandler):
+
+    
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
@@ -151,6 +155,58 @@ class PostPage(BlogHandler):
             return
 
         self.render("permalink.html", post = post)
+
+
+    def post(self, post_id):
+        error = ""
+        confirmation = ""
+        can_update = True
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        if not post:
+            self.error(404)
+            return
+
+        if not self.user:
+            error = "You must login to 'Like/Unlike' a post."
+            self.render("permalink.html", post = post, error = error)
+            return
+        
+        if self.user.name == post.author:
+            can_update = False
+            error = "You can't 'Like/Unlike' your own post. No changes made."
+            self.render("permalink.html", post = post, error = error)
+            return
+
+        
+       
+        if self.request.get('form_name') == 'like':
+                if (post.liked_by.find(self.user.name) == -1):
+                    post.likes = post.likes + 1
+                    post.liked_by = ','.join((post.liked_by,self.user.name))
+                    post.put()
+                    confirmation = "You have now 'Liked' this blog entry."
+                    self.render("permalink.html", post = post, confirmation = confirmation)
+                    return
+                else:
+                    error = "You have already 'Liked' this blog entry. No changes made."
+                    self.render("permalink.html", post = post, error = error)
+                    return
+        elif self.request.get('form_name') == 'unlike':
+            if (post.liked_by.find(self.user.name) == -1):
+                    error = "You have not 'liked' this entry yet - no 'unlike' can be done. No changes made."
+                    self.render("permalink.html", post = post, error = error)
+                    return
+            else:
+                post.likes = post.likes - 1
+                post.liked_by = post.liked_by.replace("," + self.user.name , "")
+                post.put()
+                confirmation = "You have now 'Unliked' this blog entry."
+                self.render("permalink.html", post = post, confirmation = confirmation)
+                return
+
+ 
 
 class NewPost(BlogHandler):
     def get(self):
@@ -166,8 +222,10 @@ class NewPost(BlogHandler):
         subject = self.request.get('subject')
         content = self.request.get('content')
         author  = self.user.name
+        likes = 0
+        liked_by = ""
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content, author = author)
+            p = Post(parent = blog_key(), subject = subject, content = content, author = author, likes = likes, liked_by = liked_by)
             p.put()
             self.redirect('/blog/%s' % str(p.key().id()))
         else:
@@ -284,6 +342,28 @@ class Unit3Welcome(BlogHandler):
         else:
             self.redirect('/signup')
 
+class LikePost(BlogHandler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        if not post:
+            self.error(404)
+            return
+
+        if self.user:
+            #self.render('welcome.html', username = self.user.name)
+            self.render('likepost.html', post = self.post)
+        else:
+            self.redirect('/signup')
+
+class UnlikePost(BlogHandler):
+    def get(self):
+        if self.user:
+            self.render('welcome.html', username = self.user.name)
+        else:
+            self.redirect('/signup')
+                        
 class Welcome(BlogHandler):
     def get(self):
         username = self.request.get('username')
@@ -299,6 +379,8 @@ app = webapp2.WSGIApplication([('/', BlogFront),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
+                               ('/blog/likepost', LikePost),
+                               ('/blog/unlikepost', UnlikePost),                                 
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
