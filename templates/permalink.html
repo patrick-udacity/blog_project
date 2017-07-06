@@ -14,5 +14,13 @@
         <input type = "hidden" name = "form_name" value = "unlike">
   </div>
 </form>
-<div class = "error">{{error}}</div><div class = "message">{{confirmation}}</div>
+<form method="post">
+  <div class="post-likes post-update">
+    <input type="image" name= "update_post" value="update_post" 
+      title="Click to update the post." src="/images/update.jpg" height="40">
+        <input type = "hidden" name = "form_name" value = "update_post">
+  </div>
+  <div class = "error">{{error}}</div><div class = "message">{{confirmation}}</div>
+</form>
+
 {% endblock %}

@@ -160,7 +160,6 @@ class PostPage(BlogHandler):
     def post(self, post_id):
         error = ""
         confirmation = ""
-        can_update = True
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
 
@@ -168,20 +167,22 @@ class PostPage(BlogHandler):
             self.error(404)
             return
 
+        #Check to see if a user is logged in.
         if not self.user:
-            error = "You must login to 'Like/Unlike' a post."
+            error = "You must login to 'Like/Unlike/Edit' a post."
             self.render("permalink.html", post = post, error = error)
             return
-        
-        if self.user.name == post.author:
-            can_update = False
+
+        #Prohibit authors from liking their own posts.
+        if ((self.user.name == post.author) and (not (self.request.get('form_name') == 'update_post' or self.request.get('form_name') == 'update_complete'))):
             error = "You can't 'Like/Unlike' your own post. No changes made."
             self.render("permalink.html", post = post, error = error)
             return
 
-        
-       
+        #Process a request to like a blog entry.     
         if self.request.get('form_name') == 'like':
+                #Make sure the user does not already like the post.
+                #Like allowed
                 if (post.liked_by.find(self.user.name) == -1):
                     post.likes = post.likes + 1
                     post.liked_by = ','.join((post.liked_by,self.user.name))
@@ -189,15 +190,22 @@ class PostPage(BlogHandler):
                     confirmation = "You have now 'Liked' this blog entry."
                     self.render("permalink.html", post = post, confirmation = confirmation)
                     return
+                #Like blocked
                 else:
                     error = "You have already 'Liked' this blog entry. No changes made."
                     self.render("permalink.html", post = post, error = error)
                     return
+        
+        #Process a request to unlike a blog entry.
         elif self.request.get('form_name') == 'unlike':
+            #Make sure that the user currenty likes the post.
+            #Unlike blocked
             if (post.liked_by.find(self.user.name) == -1):
                     error = "You have not 'liked' this entry yet - no 'unlike' can be done. No changes made."
                     self.render("permalink.html", post = post, error = error)
                     return
+                
+            #Unlike allowed
             else:
                 post.likes = post.likes - 1
                 post.liked_by = post.liked_by.replace("," + self.user.name , "")
@@ -206,7 +214,31 @@ class PostPage(BlogHandler):
                 self.render("permalink.html", post = post, confirmation = confirmation)
                 return
 
- 
+        #Process a request to update a blog entry.
+        elif self.request.get('form_name') == 'update_post':
+
+            #Make sure updater is the author of the blog entry.
+            #Update blocked
+            if not self.user.name == post.author:
+                error = "You are not authorized to update this post."
+                self.render("permalink.html", post = post, error = error)
+                return
+            #Update allowed
+            elif self.user.name == post.author:
+                self.render("updatepost.html", post = post)
+
+        #Add the updates to the Post entity.
+        if self.request.get('form_name') == 'update_complete':
+            
+            post.subject = self.request.get('subject')
+            post.content = self.request.get('content')
+            post.put()
+        
+            confirmation = "Post has been updated."
+            self.render("permalink.html", post = post, confirmation = confirmation)
+            return  
+
+
 
 class NewPost(BlogHandler):
     def get(self):
@@ -232,6 +264,24 @@ class NewPost(BlogHandler):
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject, content=content, error=error)
 
+class UpdatePost(BlogHandler):
+    
+    def post(self, post_id):
+        error = ""
+        confirmation = ""
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        if not post:
+            self.error(404)
+            return    
+
+        subject = self.request.get('subject')
+        content = self.request.get('content')
+        
+        confirmation = "Post has been updated."
+        self.render("updatepost.html", post = post, confirmation = confirmation)
+        return    
 
 ###### Unit 2 HW's
 class Rot13(BlogHandler):
@@ -342,27 +392,6 @@ class Unit3Welcome(BlogHandler):
         else:
             self.redirect('/signup')
 
-class LikePost(BlogHandler):
-    def get(self, post_id):
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
-
-        if not post:
-            self.error(404)
-            return
-
-        if self.user:
-            #self.render('welcome.html', username = self.user.name)
-            self.render('likepost.html', post = self.post)
-        else:
-            self.redirect('/signup')
-
-class UnlikePost(BlogHandler):
-    def get(self):
-        if self.user:
-            self.render('welcome.html', username = self.user.name)
-        else:
-            self.redirect('/signup')
                         
 class Welcome(BlogHandler):
     def get(self):
@@ -379,8 +408,6 @@ app = webapp2.WSGIApplication([('/', BlogFront),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
-                               ('/blog/likepost', LikePost),
-                               ('/blog/unlikepost', UnlikePost),                                 
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
