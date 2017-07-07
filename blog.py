@@ -3,6 +3,7 @@ import re
 import random
 import hashlib
 import hmac
+import time
 from string import letters
 
 import webapp2
@@ -127,6 +128,7 @@ def blog_key(name = 'default'):
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
+    comments = db.TextProperty(required = False)
     author = db.StringProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
@@ -174,7 +176,8 @@ class PostPage(BlogHandler):
             return
 
         #Prohibit authors from liking their own posts.
-        if ((self.user.name == post.author) and (not (self.request.get('form_name') == 'update_post' or self.request.get('form_name') == 'update_complete'))):
+        if ((self.user.name == post.author) and ((self.request.get('form_name') == 'like' or
+                self.request.get('form_name') == 'unlike'))):
             error = "You can't 'Like/Unlike' your own post. No changes made."
             self.render("permalink.html", post = post, error = error)
             return
@@ -228,7 +231,7 @@ class PostPage(BlogHandler):
                 self.render("updatepost.html", post = post)
 
         #Add the updates to the Post entity.
-        if self.request.get('form_name') == 'update_complete':
+        elif self.request.get('form_name') == 'update_complete':
             
             post.subject = self.request.get('subject')
             post.content = self.request.get('content')
@@ -236,9 +239,43 @@ class PostPage(BlogHandler):
         
             confirmation = "Post has been updated."
             self.render("permalink.html", post = post, confirmation = confirmation)
-            return  
+            return
 
+        #Initiate the add a comment page.
+        elif self.request.get('form_name') == 'comment':
+            self.render("comment.html", post = post)
+            return
+    
+        #Submit a comment for addtion to an entity.
+        elif self.request.get('form_name') == 'submit_comment':
+            signature = str(self.user.name).upper() + str(time.strftime(" on %d/%m/%Y at %I:%M %p(GMT):"))
+            content = signature + "\r\n" + str(self.request.get('comment_content')) + "\r\n\r\n"
+            post.comments = str(post.comments).replace('None','') + content
+            post.put()
+            self.render("permalink.html", post = post)
+            return
 
+        #Cancel comment submission.
+        elif self.request.get('form_name') == 'cancel_comment':
+            self.render("permalink.html", post = post)
+            return
+    
+        #Initiate the deletion of a post.
+        elif self.request.get('form_name') == 'delete_post':
+            #Make sure updater is the author of the blog entry.
+            #Update blocked
+            if self.user.name == post.author:
+                db.delete(key)
+                #self.redirect('/blog')
+                posts = Post.all().order('-created')
+                self.render('front.html', posts = posts)
+                return
+            #Post deletion blocked for non author
+            else:
+                if not self.user.name == post.author:
+                    error = "You are not authorized to delete this post."
+                    self.render("permalink.html", post = post, error = error)
+                    return
 
 class NewPost(BlogHandler):
     def get(self):
@@ -256,6 +293,8 @@ class NewPost(BlogHandler):
         author  = self.user.name
         likes = 0
         liked_by = ""
+        comments = ""
+        
         if subject and content:
             p = Post(parent = blog_key(), subject = subject, content = content, author = author, likes = likes, liked_by = liked_by)
             p.put()
@@ -264,24 +303,7 @@ class NewPost(BlogHandler):
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject, content=content, error=error)
 
-class UpdatePost(BlogHandler):
-    
-    def post(self, post_id):
-        error = ""
-        confirmation = ""
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
-
-        if not post:
-            self.error(404)
-            return    
-
-        subject = self.request.get('subject')
-        content = self.request.get('content')
-        
-        confirmation = "Post has been updated."
-        self.render("updatepost.html", post = post, confirmation = confirmation)
-        return    
+ 
 
 ###### Unit 2 HW's
 class Rot13(BlogHandler):

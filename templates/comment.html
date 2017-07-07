@@ -1,0 +1,59 @@
+{% extends "base.html" %} {% block content %} {{post.render() | safe}}
+<div>Likes: {{post.likes}}{{post.liked_by}}</div>
+<div>Comments:</div>
+<div><pre>{{post.comments}}</pre></div>
+<form method="post">
+  <div class="post-likes likes">
+    <input type="image" disabled name="like_action" title="Disabled while commenting." value="like" src="/images/like.png" height="40px">
+    <input type="hidden" name="form_name" value="like">
+  </div>
+</form>
+<form method="post">
+  <div class="post-likes dislikes">
+    <input type="image" disabled name="unlike_action" title="Disabled while commenting." value="unlike" src="/images/dislike.png"
+      height="40px">
+    <input type="hidden" name="form_name" value="unlike">
+  </div>
+</form>
+<form method="post">
+  <div class="post-likes post-comment">
+    <input type="image" disabled name="comment" title="Disabled while commenting." value="comment" src="/images/comment.png"
+      height="60px">
+    <input type="hidden" name="form_name" value="comment">
+  </div>
+</form>
+<form method="post">
+  <div class="post-likes post-update">
+    <input type="image" disabled name="update_post" value="update_post" title="Disabled while commenting." src="/images/update.jpg"
+      height="40px">
+    <input type="hidden" name="form_name" value="update_post">
+  </div>
+</form>
+<form method="post">
+  <div class="post-likes post-delete">
+    <input type="image" disabled name= "delete_post" value="delete_post" 
+      title="Disabled while commenting." src="/images/delete.jpg" height="45px">
+        <input type = "hidden" name = "form_name" value = "delete_post">
+  </div>
+</form>
+<h2>Add a Reply:</h2>
+
+<form method="post">
+  <textarea name="comment_content" class="comment_content"></textarea>
+  <div class="error">{{error}}</div>
+
+  <input type="submit" value="Submit Comment">
+  <input type="hidden" name="form_name" value="submit_comment">
+</form>
+
+<form method="post">
+  <input type="submit" value="Cancel">
+  <input type="hidden" name="form_name" value="cancel_comment">
+</form>
+
+<form>
+  <div class="error">{{error}}</div>
+  <div class="message">{{confirmation}}</div>
+</form>
+
+{% endblock %}
