@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link type="text/css" rel="stylesheet" href="/static/main.css" />
+    <!-- Bootstrap 3 -->
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap-theme.min.css">
+    <link type="text/css" rel="stylesheet" href="/static/main.css" />    
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>  
 
-  <title>Patrick's Blog Site</title>
+
+  <title>Project 3 Blog Site</title>
 </head>
 
 <body>
   <div class="main-title">
     <a href="/blog" class="main-title"
      title="Click to see 10 most recent blog entries.">
-      Patrick's Blog Site
+      <h1 class="center">Project 3 Blog Site</h1>
     </a>
+    
 
     <div class="login-area">
       {% if user %} {{user.name}} (<a class="login-link" href="/logout">logout</a>) |

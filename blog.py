@@ -263,12 +263,13 @@ class PostPage(BlogHandler):
         #Initiate the deletion of a post.
         elif self.request.get('form_name') == 'delete_post':
             #Make sure updater is the author of the blog entry.
-            #Update blocked
+            #Confirm author
             if self.user.name == post.author:
-                db.delete(key)
-                #self.redirect('/blog')
-                posts = Post.all().order('-created')
-                self.render('front.html', posts = posts)
+                self.render("confirmdelete.html")
+                #db.delete(key)
+                ##self.redirect('/blog')
+                #posts = Post.all().order('-created')
+                #self.render('front.html', posts = posts)
                 return
             #Post deletion blocked for non author
             else:
@@ -276,6 +277,22 @@ class PostPage(BlogHandler):
                     error = "You are not authorized to delete this post."
                     self.render("permalink.html", post = post, error = error)
                     return
+
+        #Delete a post.
+        elif self.request.get('form_name') == 'delete_yes':
+            #Make sure updater is the author of the blog entry.
+            #Confirm author
+            if self.user.name == post.author:
+                db.delete(key)
+                posts = Post.all().order('-created')
+                self.render('front.html', posts = posts)
+                return
+
+        #Deletion Cancelled.
+        elif self.request.get('form_name') == 'delete_cancel':
+            self.render("permalink.html", post = post)
+            return 
+                           
 
 class NewPost(BlogHandler):
     def get(self):
@@ -303,20 +320,6 @@ class NewPost(BlogHandler):
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject, content=content, error=error)
 
- 
-
-###### Unit 2 HW's
-class Rot13(BlogHandler):
-    def get(self):
-        self.render('rot13-form.html')
-
-    def post(self):
-        rot13 = ''
-        text = self.request.get('text')
-        if text:
-            rot13 = text.encode('rot13')
-
-        self.render('rot13-form.html', text = rot13)
 
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
@@ -368,9 +371,7 @@ class Signup(BlogHandler):
     def done(self, *a, **kw):
         raise NotImplementedError
 
-class Unit2Signup(Signup):
-    def done(self):
-        self.redirect('/unit2/welcome?username=' + self.username)
+
 
 class Register(Signup):
     def done(self):
@@ -407,32 +408,18 @@ class Logout(BlogHandler):
         self.logout()
         self.redirect('/blog')
 
-class Unit3Welcome(BlogHandler):
-    def get(self):
-        if self.user:
-            self.render('welcome.html', username = self.user.name)
-        else:
-            self.redirect('/signup')
 
-                        
-class Welcome(BlogHandler):
-    def get(self):
-        username = self.request.get('username')
-        if valid_username(username):
-            self.render('welcome.html', username = username)
-        else:
-            self.redirect('/unit2/signup')
 
 app = webapp2.WSGIApplication([('/', BlogFront),
-                               ('/unit2/rot13', Rot13),
-                               ('/unit2/signup', Unit2Signup),
-                               ('/unit2/welcome', Welcome),
+                              # ('/unit2/rot13', Rot13),
+                              # ('/unit2/signup', Unit2Signup),
+                             #  ('/unit2/welcome', Welcome),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
-                               ('/unit3/welcome', Unit3Welcome),
+                              # ('/unit3/welcome', Unit3Welcome),
                                ],
                               debug=True)
