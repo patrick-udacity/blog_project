@@ -4,16 +4,17 @@ import random
 import hashlib
 import hmac
 import time
-from string import letters
 
 import webapp2
 import jinja2
+
+from string import letters
 
 from google.appengine.ext import db
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
-                               autoescape = True)
+    autoescape = True)
 
 secret = "362UaNCxNqj8Qe30fC1BxDdMtVNtFLZgo7Mn7Wgs"
 
@@ -56,7 +57,8 @@ class BlogHandler(webapp2.RequestHandler):
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key().id()))
         activeUser = str(user.key().name)
-        self.response.headers.add_header('Set-Cookie', 'activeUser=' + activeUser + '; Path=/')
+        self.response.headers.add_header('Set-Cookie', 'activeUser='
+            + activeUser + '; Path=/')
     def logout(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
@@ -69,12 +71,13 @@ def render_post(response, post):
     response.out.write('<b>' + post.subject + '</b><br>')
     response.out.write(post.content)
 
+
 class MainPage(BlogHandler):
   def get(self):
       self.write('Hello, Udacity!')
 
 
-##### user stuff
+##### User account creation functions.
 def make_salt(length = 5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -91,6 +94,8 @@ def valid_pw(name, password, h):
 def users_key(group = 'default'):
     return db.Key.from_path('users', group)
 
+
+#Create the user object for logins.
 class User(db.Model):
     name = db.StringProperty(required = True)
     pw_hash = db.StringProperty(required = True)
@@ -119,12 +124,12 @@ class User(db.Model):
         if u and valid_pw(name, pw, u.pw_hash):
             return u
 
-
-##### blog stuff
-
+##### Functions for blog post creations.
 def blog_key(name = 'default'):
     return db.Key.from_path('blogs', name)
 
+
+#Single blog post object.
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
@@ -140,13 +145,16 @@ class Post(db.Model):
         self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p = self)
 
+
+#Front end handler
 class BlogFront(BlogHandler):
     def get(self):
         posts = Post.all().order('-created')
         self.render('front.html', posts = posts)
 
-class PostPage(BlogHandler):
 
+#Post page handler
+class PostPage(BlogHandler):
     
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
@@ -157,7 +165,6 @@ class PostPage(BlogHandler):
             return
 
         self.render("permalink.html", post = post)
-
 
     def post(self, post_id):
         error = ""
@@ -171,13 +178,14 @@ class PostPage(BlogHandler):
 
         #Check to see if a user is logged in.
         if not self.user:
-            error = "You must login to 'Like/Unlike/Edit' a post."
-            self.render("permalink.html", post = post, error = error)
+            userunknown_error = "You must login to 'Like/Unlike/Edit' a post."
+            self.render("login-form.html", post = post,
+                userunknown_error = userunknown_error)
             return
 
         #Prohibit authors from liking their own posts.
-        if ((self.user.name == post.author) and ((self.request.get('form_name') == 'like' or
-                self.request.get('form_name') == 'unlike'))):
+        if ((self.user.name == post.author) and ((self.request.get('form_name')
+            == 'like' or self.request.get('form_name') == 'unlike'))):
             error = "You can't 'Like/Unlike' your own post. No changes made."
             self.render("permalink.html", post = post, error = error)
             return
@@ -190,13 +198,18 @@ class PostPage(BlogHandler):
                     post.likes = post.likes + 1
                     post.liked_by = ','.join((post.liked_by,self.user.name))
                     post.put()
+                    message = " (Liked by you.)"
                     confirmation = "You have now 'Liked' this blog entry."
-                    self.render("permalink.html", post = post, confirmation = confirmation)
+                    self.render("permalink.html", post = post,
+                        confirmation = confirmation, message = message)
                     return
                 #Like blocked
                 else:
-                    error = "You have already 'Liked' this blog entry. No changes made."
-                    self.render("permalink.html", post = post, error = error)
+                    error = ("You have already 'Liked' this blog entry. "
+                        + "No changes made.")
+                    message = " (Liked by you.)"
+                    self.render("permalink.html", post = post,
+                        error = error, message = message)
                     return
         
         #Process a request to unlike a blog entry.
@@ -204,17 +217,20 @@ class PostPage(BlogHandler):
             #Make sure that the user currenty likes the post.
             #Unlike blocked
             if (post.liked_by.find(self.user.name) == -1):
-                    error = "You have not 'liked' this entry yet - no 'unlike' can be done. No changes made."
+                    error = ("You have not 'liked' this entry yet - no "
+                        + "'unlike' can be done. No changes made.")
                     self.render("permalink.html", post = post, error = error)
                     return
                 
             #Unlike allowed
             else:
                 post.likes = post.likes - 1
-                post.liked_by = post.liked_by.replace("," + self.user.name , "")
+                post.liked_by = (post.liked_by.replace(","
+                    + self.user.name , ""))
                 post.put()
                 confirmation = "You have now 'Unliked' this blog entry."
-                self.render("permalink.html", post = post, confirmation = confirmation)
+                self.render("permalink.html", post = post,
+                    confirmation = confirmation)
                 return
 
         #Process a request to update a blog entry.
@@ -238,7 +254,13 @@ class PostPage(BlogHandler):
             post.put()
         
             confirmation = "Post has been updated."
-            self.render("permalink.html", post = post, confirmation = confirmation)
+            self.render("permalink.html", post = post,
+                confirmation = confirmation)
+            return
+
+        #Cancel post update submission.
+        elif self.request.get('form_name') == 'update_cancelled':
+            self.render("permalink.html", post = post)
             return
 
         #Initiate the add a comment page.
@@ -246,10 +268,12 @@ class PostPage(BlogHandler):
             self.render("comment.html", post = post)
             return
     
-        #Submit a comment for addtion to an entity.
+        #Submit a comment for addition to an entity.
         elif self.request.get('form_name') == 'submit_comment':
-            signature = str(self.user.name).upper() + str(time.strftime(" on %d/%m/%Y at %I:%M %p(GMT):"))
-            content = signature + "\r\n" + str(self.request.get('comment_content')) + "\r\n\r\n"
+            signature = (str(self.user.name).upper()
+                + str(time.strftime(" on %d/%m/%Y at %I:%M %p(GMT):")))
+            content = (signature +
+                "\r\n" + str(self.request.get('comment_content')) + "\r\n\r\n")
             post.comments = str(post.comments).replace('None','') + content
             post.put()
             self.render("permalink.html", post = post)
@@ -266,10 +290,6 @@ class PostPage(BlogHandler):
             #Confirm author
             if self.user.name == post.author:
                 self.render("confirmdelete.html")
-                #db.delete(key)
-                ##self.redirect('/blog')
-                #posts = Post.all().order('-created')
-                #self.render('front.html', posts = posts)
                 return
             #Post deletion blocked for non author
             else:
@@ -294,6 +314,7 @@ class PostPage(BlogHandler):
             return 
                            
 
+#Handler for a new post
 class NewPost(BlogHandler):
     def get(self):
         if self.user:
@@ -313,27 +334,34 @@ class NewPost(BlogHandler):
         comments = ""
         
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content, author = author, likes = likes, liked_by = liked_by)
+            p = (Post(parent = blog_key(), subject = subject,
+                content = content, author = author, likes = likes,
+                liked_by = liked_by))
             p.put()
             self.redirect('/blog/%s' % str(p.key().id()))
         else:
             error = "subject and content, please!"
-            self.render("newpost.html", subject=subject, content=content, error=error)
+            self.render("newpost.html", subject=subject,
+                content=content, error=error)
 
 
-
+#User account name validation.
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 def valid_username(username):
     return username and USER_RE.match(username)
 
+#Password validation
 PASS_RE = re.compile(r"^.{3,20}$")
 def valid_password(password):
     return password and PASS_RE.match(password)
 
+#Email validation
 EMAIL_RE  = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
+
+#Signup for new account handler. This helps structure the account properties.
 class Signup(BlogHandler):
     def get(self):
         self.render("signup-form.html")
@@ -373,6 +401,7 @@ class Signup(BlogHandler):
 
 
 
+#Register a new account handler.
 class Register(Signup):
     def done(self):
         #make sure the user doesn't already exist
@@ -387,6 +416,7 @@ class Register(Signup):
             self.login(u)
             self.redirect('/blog')
 
+#Login handler.
 class Login(BlogHandler):
     def get(self):
         self.render('login-form.html')
@@ -403,6 +433,8 @@ class Login(BlogHandler):
             msg = 'Invalid login'
             self.render('login-form.html', error = msg)
 
+
+#Logout handler
 class Logout(BlogHandler):
     def get(self):
         self.logout()
@@ -410,16 +442,13 @@ class Logout(BlogHandler):
 
 
 
+#Url handlers.
 app = webapp2.WSGIApplication([('/', BlogFront),
-                              # ('/unit2/rot13', Rot13),
-                              # ('/unit2/signup', Unit2Signup),
-                             #  ('/unit2/welcome', Welcome),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
-                              # ('/unit3/welcome', Unit3Welcome),
                                ],
                               debug=True)

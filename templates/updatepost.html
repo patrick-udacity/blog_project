@@ -1,22 +1,24 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<h2>Update Post</h2>
 
-{% block content %}
-  <h2>Update Post</h2>
-
-    <form method="post">
-      <label>
+<form method="post">
+  <label>
         <div>subject</div>
         <input type="text" name="subject" value="{{post.subject}}">
       </label>
 
-      <label>
+  <label>
         <div>blog</div>
         <textarea name="content">{{post.content}}</textarea>
       </label>
 
-      <div class="error">{{error}}</div>
+  <div class="error">{{error}}</div>
 
-      <input type="submit" value="Update Post">
-      <input type = "hidden" name = "form_name" value = "update_complete">
-    </form>
+  <input type="submit" value="Update Post">
+  <input type="hidden" name="form_name" value="update_complete">
+</form>
+<form method="post">
+  <input type="submit" value="Cancel">
+  <input type="hidden" name="form_name" value="update_cancelled">
+</form>
 {% endblock %}
