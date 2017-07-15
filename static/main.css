@@ -73,6 +73,10 @@ body {
     padding-right: 170px;
 }
 
+.comment-date {
+    color: blue;
+}
+
 h2 {
     font-size: 24px;
     font-weight: bold;
@@ -171,7 +175,7 @@ input[type=submit] {
 }
 
 .comment_content {
-    height: 200px;
+    height: 100px;
 }
 
 
@@ -182,4 +186,14 @@ input[type=submit] {
 
 .warning_button {
     padding: 15px;
+}
+
+.comment_edit_img {
+    display: inline-block;
+    margin-top: 5px;
+
+}
+
+.post_button {
+    width: 225px;
 }

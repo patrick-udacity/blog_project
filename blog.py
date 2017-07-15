@@ -128,12 +128,16 @@ class User(db.Model):
 def blog_key(name = 'default'):
     return db.Key.from_path('blogs', name)
 
-
+    
 #Single blog post object.
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
     comments = db.TextProperty(required = False)
+    #########################################################   
+    #############Working on the editable comments issue here.
+    comment_list = db.StringListProperty(required = True)
+    #########################################################
     author = db.StringProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
@@ -171,6 +175,7 @@ class PostPage(BlogHandler):
         confirmation = ""
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
+        comment_list = []#This list will be used to extract an entity's comments.
 
         if not post:
             self.error(404)
@@ -267,17 +272,54 @@ class PostPage(BlogHandler):
         elif self.request.get('form_name') == 'comment':
             self.render("comment.html", post = post)
             return
-    
+
+        #Initiate the update of a comment page.
+        #Make sure updater is the author of the comment.
+        #Confirm author 
+        elif self.request.get('form_name') == 'edit_comment':
+            active_content  = self.request.get('active_comment')
+            if self.user.name.upper() in active_content:      
+                #active_content  = self.request.get('active_comment')
+                self.render("edit_comment.html", post = post,
+                    active_content = active_content.split('^',1)[1],
+                    comment_object = active_content.split('^',1)[0])
+                return
+            else:
+                error = self.user.name.upper() + ", you are not authorized to edit this comment."
+                self.render("permalink.html", post = post, error = error)
+                return
+        
         #Submit a comment for addition to an entity.
         elif self.request.get('form_name') == 'submit_comment':
+            # The ^ character will be used as a delimiter in the stored comment list members.
             signature = (str(self.user.name).upper()
-                + str(time.strftime(" on %d/%m/%Y at %I:%M %p(GMT):")))
+                + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
             content = (signature +
-                "\r\n" + str(self.request.get('comment_content')) + "\r\n\r\n")
+                str(self.request.get('comment_content')))
             post.comments = str(post.comments).replace('None','') + content
+            post.comment_list.append(content)
             post.put()
             self.render("permalink.html", post = post)
             return
+
+        #Update an existing comment.
+        elif self.request.get('form_name') == 'update_comment':
+            # The ^ character will be used as a delimiter in the stored comment list members.
+            comment_object  = self.request.get('comment_object')
+            #comment_index = post.comment_list.index(comment_object)
+            comment_index = ([i for i, s in
+                enumerate(post.comment_list) if comment_object in s])
+            
+            comment_text = self.request.get('comment_content')
+            signature = (str(self.user.name).upper()
+                + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
+            content = (signature + comment_text)
+            
+            #post.comments = str(post.comments).replace('None','') + content
+            post.comment_list[comment_index[0]] = content
+            post.put()
+            self.render("permalink.html", post = post)
+            return        
 
         #Cancel comment submission.
         elif self.request.get('form_name') == 'cancel_comment':

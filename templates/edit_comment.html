@@ -36,14 +36,15 @@
         <input type = "hidden" name = "form_name" value = "delete_post">
   </div>
 </form>
-<h2>Add a Reply:</h2>
+<h2>Update Comment:</h2>
 
 <form method="post">
-  <textarea name="comment_content" class="comment_content"></textarea>
+  <textarea name="comment_content" class="comment_content">{{active_content}}</textarea>
   <div class="error">{{error}}</div>
 
-  <input type="submit" value="Submit Comment" class="post_button">
-  <input type="hidden" name="form_name" value="submit_comment">
+  <input type="submit" value="Submit Update" class="post_button">
+  <input type="hidden" name="form_name" value="update_comment">
+  <input type="hidden" name="comment_object" value='{{comment_object}}'>  
 </form>
 
 <form method="post">

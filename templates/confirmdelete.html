@@ -5,13 +5,13 @@
   <form class="warning_button" method="post">
     <p class="center">Deleting a post can not be undone. Once you delete it, it will be gone for good.</p>
     <p class="center">Select 'OK to Delete' to proceed, or 'Cancel' to go back.</p>
-    <input type="submit" value="Ok to Delete">
+    <input type="submit" value="Ok to Delete" class="post_button">
     <input type="hidden" name="form_name" value="delete_yes">
   </form>
 
   <form class="warning_button" method="post">
-    <input type="submit" value="Cancel">
-    <input type="hidden" name="form_name" value="delete_cancel">
+    <input type="submit" value="Cancel" class="post_button">
+    <input type="hidden" name="form_name" value="delete_cancel" >
   </form>
 </div>
 {% endblock %}

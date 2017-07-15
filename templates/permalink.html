@@ -1,7 +1,30 @@
 {% extends "base.html" %} {% block content %} {{post.render() | safe}}
 <div >Likes: {{post.likes}}{{message}}</div>
 <div>Comments:</div>
-<div><pre>{{post.comments}}</pre></div>
+
+{% for result in post.comment_list %} 
+  {% set result_list = result.split('^',1) %}
+  <form method="post">
+    <div>
+      <div class="comment-date">{{ result_list[0] }}</div>
+      <div>
+        <input type="image" name="edit_comment" 
+          title="Click to edit this comment." value="edit_comment" 
+          src="/images/edit_comment.png" 
+          class="comment_edit_img"
+          height="30px">
+        <input type="hidden" name="form_name" value="edit_comment">
+        <input type="hidden" name="active_comment" value="{{ result }}">
+        {{result_list[1]}}
+      </div>
+
+      <br><br>
+    </div>
+  </form>
+    {% endfor %}
+
+
+
 <form method="post">
   <div class="post-likes likes">
     <input type="image" name = "like_action" title="Click to Like." 
