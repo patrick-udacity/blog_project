@@ -262,7 +262,10 @@ class PostPage(BlogHandler):
 
         #Add the updates to the Post entity.
         elif self.request.get('form_name') == 'update_complete':
-            
+            if not self.user.name == post.author:
+                error = "You are not authorized to update this post."
+                self.render("permalink.html", post = post, error = error)
+                return
             post.subject = self.request.get('subject')
             post.content = self.request.get('content')
             post.put()
