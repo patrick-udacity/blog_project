@@ -247,10 +247,11 @@ class PostPage(BlogHandler):
                 error = "You are not authorized to update this post."
                 self.render("permalink.html", post = post, error = error)
                 return
+            
             """Update allowed
             Addding this second post author check at the recommendation
-            of by first projet submission results."""
-            elif self.user.name == post.author:
+            of by first project submission results."""
+            if self.user.name == post.author:
                 if not self.user.name == post.author:
                     error = "You are not authorized to update this post."
                     self.render("permalink.html", post = post, error = error)
@@ -293,9 +294,9 @@ class PostPage(BlogHandler):
             self.render("permalink.html", post = post)
             return
 
-        """Initiate the update of a comment page.
-        Make sure updater is the author of the comment.
-        Confirm author """
+        #Initiate the update of a comment page.
+        #Make sure updater is the author of the comment.
+        #Confirm author
         elif self.request.get('form_name') == 'edit_comment':
             active_content  = self.request.get('active_comment')
             if self.user.name.upper() in active_content:      
@@ -326,18 +327,23 @@ class PostPage(BlogHandler):
                 content = (signature + comment_text)
             
                 post.comment_list[comment_index[0]] = content
-                post.put()
-                self.render("permalink.html", post = post)
-                return
-          else:
+                
+                """Update allowed
+                Addding this second post author check at the recommendation
+                of by first project submission results."""
+                if self.user.name.upper() in comment_object:
+                    post.put()
+                    self.render("permalink.html", post = post)
+                    return
+            else:
                 error = self.user.name.upper() + (
                     ", you are not authorized to edit this comment.")
                 self.render("permalink.html", post = post, error = error)
                 return   
 
-        """Delete a comment.
-        Make sure updater is the author of the comment.
-        Confirm author """
+        #Delete a comment.
+        #Make sure updater is the author of the comment.
+        #Confirm author
         elif self.request.get('form_name') == 'delete_comment':
             comment_object  = self.request.get('comment_object')
             if self.user.name.upper() in comment_object:
@@ -401,6 +407,7 @@ class NewPost(BlogHandler):
             self.render("newpost.html")
         else:
             self.redirect("/login")
+            return
 
     def post(self):
         if not self.user:
@@ -420,6 +427,7 @@ class NewPost(BlogHandler):
                 liked_by = liked_by))
             p.put()
             self.redirect('/blog/%s' % str(p.key().id()))
+            return
         else:
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject,
@@ -495,6 +503,7 @@ class Register(Signup):
             u.put()
             self.login(u)
             self.redirect('/blog')
+            return
 
 """Login handler."""
 class Login(BlogHandler):
@@ -508,6 +517,7 @@ class Login(BlogHandler):
         if u:
             self.login(u)
             self.redirect('/blog')
+            return
         else:
             msg = 'Invalid login'
             self.render('login-form.html', error = msg)
@@ -518,6 +528,7 @@ class Logout(BlogHandler):
     def get(self):
         self.logout()
         self.redirect('/blog')
+        return
 
 
 

@@ -10,6 +10,11 @@ This is project number three for the Udacity **Full Stack Web Development Course
 
 No installation is required. The applicaton is run as an application using the Google App Engine environment.
 
+### If you want to perform a local install of this application, and run it from your computer, please complete the following steps.
+1. [Install Python](https://www.python.org/downloads/) if necessary.
+2. [Install Google App Engine SDK](https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python/).
+3. When developing locally, you can use dev_appserver.py to run a copy of your app on your own computer, and access it at http://localhost:8080/.
+
 ## General Information
 
 This application can be run without any type of login. All existing blogs are visible to the public, and can be viewed simply by visiting the site. **To refresh the content at anytime click on the main title "Project 3 Blog Site"**.
