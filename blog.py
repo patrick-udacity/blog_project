@@ -59,6 +59,7 @@ class BlogHandler(webapp2.RequestHandler):
         activeUser = str(user.key().name)
         self.response.headers.add_header('Set-Cookie', 'activeUser='
             + activeUser + '; Path=/')
+        
     def logout(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
@@ -77,7 +78,7 @@ class MainPage(BlogHandler):
       self.write('Hello, Udacity!')
 
 
-##### User account creation functions.
+"""User account creation functions."""
 def make_salt(length = 5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -95,7 +96,7 @@ def users_key(group = 'default'):
     return db.Key.from_path('users', group)
 
 
-#Create the user object for logins.
+"""Create the user object for logins."""
 class User(db.Model):
     name = db.StringProperty(required = True)
     pw_hash = db.StringProperty(required = True)
@@ -124,12 +125,12 @@ class User(db.Model):
         if u and valid_pw(name, pw, u.pw_hash):
             return u
 
-##### Functions for blog post creations.
+"""Functions for blog post creations."""
 def blog_key(name = 'default'):
     return db.Key.from_path('blogs', name)
 
     
-#Single blog post object.
+"""Single blog post object."""
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
@@ -140,20 +141,19 @@ class Post(db.Model):
     likes = db.IntegerProperty(required = False)
     liked_by = db.StringProperty(required = False)
     
-
     def render(self):
         self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p = self)
 
 
-#Front end handler
+"""Front end handler"""
 class BlogFront(BlogHandler):
     def get(self):
         posts = Post.all().order('-created')
         self.render('front.html', posts = posts)
 
 
-#Post page handler
+"""Post page handler"""
 class PostPage(BlogHandler):
     
     def get(self, post_id):
@@ -161,8 +161,7 @@ class PostPage(BlogHandler):
         post = db.get(key)
 
         if not post:
-            
-            #self.error(404)
+           #self.error(404)
             self.redirect('/blog')
             return
 
@@ -179,8 +178,7 @@ class PostPage(BlogHandler):
 
         if not post:
             self.error(404)
-            self.redirect('/blog')
-            
+            self.redirect('/blog')            
             return
 
         #Check to see if a user is logged in.
@@ -249,9 +247,17 @@ class PostPage(BlogHandler):
                 error = "You are not authorized to update this post."
                 self.render("permalink.html", post = post, error = error)
                 return
-            #Update allowed
+            """Update allowed
+            Addding this second post author check at the recommendation
+            of by first projet submission results."""
             elif self.user.name == post.author:
-                self.render("updatepost.html", post = post)
+                if not self.user.name == post.author:
+                    error = "You are not authorized to update this post."
+                    self.render("permalink.html", post = post, error = error)
+                    return
+                elif self.user.name == post.author:
+                    self.render("updatepost.html", post = post)
+                    return
 
         #Add the updates to the Post entity.
         elif self.request.get('form_name') == 'update_complete':
@@ -259,7 +265,6 @@ class PostPage(BlogHandler):
             post.subject = self.request.get('subject')
             post.content = self.request.get('content')
             post.put()
-        
             confirmation = "Post has been updated."
             self.render("permalink.html", post = post,
                 confirmation = confirmation)
@@ -277,8 +282,8 @@ class PostPage(BlogHandler):
         
         #Submit a comment for addition to an entity.
         elif self.request.get('form_name') == 'submit_comment':
-            # The ^ character will be used as a delimiter
-            # in the stored comment list members.
+            """The ^ character will be used as a delimiter
+             in the stored comment list members."""
             signature = (str(self.user.name).upper()
                 + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
             content = (signature +
@@ -288,9 +293,9 @@ class PostPage(BlogHandler):
             self.render("permalink.html", post = post)
             return
 
-        #Initiate the update of a comment page.
-        #Make sure updater is the author of the comment.
-        #Confirm author 
+        """Initiate the update of a comment page.
+        Make sure updater is the author of the comment.
+        Confirm author """
         elif self.request.get('form_name') == 'edit_comment':
             active_content  = self.request.get('active_comment')
             if self.user.name.upper() in active_content:      
@@ -306,34 +311,39 @@ class PostPage(BlogHandler):
         
         #Update an existing comment.
         elif self.request.get('form_name') == 'update_comment':
-            # The ^ character will be used as a
-            #delimiter in the stored comment list members.
+            """ The ^ character will be used as a
+            delimiter in the stored comment list members."""
             comment_object  = self.request.get('comment_object')
-
-            #Select the comment from list of comments
-            #by matching the comment text.
-            comment_index = ([i for i, s in
-                enumerate(post.comment_list) if comment_object in s])
+            if self.user.name.upper() in comment_object:
+                """Select the comment from list of comments
+                by matching the comment text."""
+                comment_index = ([i for i, s in
+                    enumerate(post.comment_list) if comment_object in s])
             
-            comment_text = self.request.get('comment_content')
-            signature = (str(self.user.name).upper()
-                + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
-            content = (signature + comment_text)
+                comment_text = self.request.get('comment_content')
+                signature = (str(self.user.name).upper()
+                    + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
+                content = (signature + comment_text)
             
-            post.comment_list[comment_index[0]] = content
-            post.put()
-            self.render("permalink.html", post = post)
-            return        
+                post.comment_list[comment_index[0]] = content
+                post.put()
+                self.render("permalink.html", post = post)
+                return
+          else:
+                error = self.user.name.upper() + (
+                    ", you are not authorized to edit this comment.")
+                self.render("permalink.html", post = post, error = error)
+                return   
 
-        #Delete a comment.
-        #Make sure updater is the author of the comment.
-        #Confirm author 
+        """Delete a comment.
+        Make sure updater is the author of the comment.
+        Confirm author """
         elif self.request.get('form_name') == 'delete_comment':
             comment_object  = self.request.get('comment_object')
             if self.user.name.upper() in comment_object:
                 
-                #Select the comment from list of
-                #comments by matching the comment text.
+                """Select the comment from list of
+                comments by matching the comment text."""
                 comment_index = ([i for i, s in
                     enumerate(post.comment_list) if comment_object in s])
                      
@@ -356,8 +366,8 @@ class PostPage(BlogHandler):
     
         #Initiate the deletion of a post.
         elif self.request.get('form_name') == 'delete_post':
-            #Make sure updater is the author of the blog entry.
-            #Confirm author
+            """Make sure updater is the author of the blog entry.
+            Confirm author"""
             if self.user.name == post.author:
                 self.render("confirmdelete.html")
                 return
@@ -370,8 +380,8 @@ class PostPage(BlogHandler):
 
         #Delete a post.
         elif self.request.get('form_name') == 'delete_yes':
-            #Make sure updater is the author of the blog entry.
-            #Confirm author
+            """Make sure updater is the author of the blog entry.
+            Confirm author"""
             if self.user.name == post.author:
                 db.delete(key)
                 posts = Post.all().order('-created')
@@ -384,7 +394,7 @@ class PostPage(BlogHandler):
             return 
                            
 
-#Handler for a new post
+"""Handler for a new post"""
 class NewPost(BlogHandler):
     def get(self):
         if self.user:
@@ -394,7 +404,8 @@ class NewPost(BlogHandler):
 
     def post(self):
         if not self.user:
-            self.redirect('/blog')
+            self.redirect("/login")
+            return
 
         subject = self.request.get('subject')
         content = self.request.get('content')
@@ -415,24 +426,24 @@ class NewPost(BlogHandler):
                 content=content, error=error)
 
 
-#User account name validation.
+"""User account name validation."""
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 def valid_username(username):
     return username and USER_RE.match(username)
 
-#Password validation
+"""Password validation"""
 PASS_RE = re.compile(r"^.{3,20}$")
 def valid_password(password):
     return password and PASS_RE.match(password)
 
-#Email validation
+"""Email validation"""
 EMAIL_RE  = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
 
-#Signup for new account handler.
-#This helps structure the account properties.
+"""Signup for new account handler.
+This helps structure the account properties."""
 class Signup(BlogHandler):
     def get(self):
         self.render("signup-form.html")
@@ -443,7 +454,6 @@ class Signup(BlogHandler):
         self.password = self.request.get('password')
         self.verify = self.request.get('verify')
         self.email = self.request.get('email')
-
         params = dict(username = self.username,
                       email = self.email)
 
@@ -472,7 +482,7 @@ class Signup(BlogHandler):
 
 
 
-#Register a new account handler.
+"""Register a new account handler."""
 class Register(Signup):
     def done(self):
         #make sure the user doesn't already exist
@@ -483,11 +493,10 @@ class Register(Signup):
         else:
             u = User.register(self.username, self.password, self.email)
             u.put()
-
             self.login(u)
             self.redirect('/blog')
 
-#Login handler.
+"""Login handler."""
 class Login(BlogHandler):
     def get(self):
         self.render('login-form.html')
@@ -495,7 +504,6 @@ class Login(BlogHandler):
     def post(self):
         username = self.request.get('username')
         password = self.request.get('password')
-
         u = User.login(username, password)
         if u:
             self.login(u)
@@ -505,7 +513,7 @@ class Login(BlogHandler):
             self.render('login-form.html', error = msg)
 
 
-#Logout handler
+"""Logout handler"""
 class Logout(BlogHandler):
     def get(self):
         self.logout()
@@ -513,7 +521,7 @@ class Logout(BlogHandler):
 
 
 
-#Url handlers.
+"""Url handlers."""
 app = webapp2.WSGIApplication([('/', BlogFront),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
