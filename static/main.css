@@ -3,7 +3,6 @@ body {
     position: relative;
     font-family: Helvetica, Arial, sans-serif;
     font-size: 14px;
-
     width: 800px;
     margin: 0 auto;
     padding: 10px;
@@ -65,9 +64,11 @@ body {
     padding-right: 55px;
     padding-top: 5px;    
 }
+
 .post-delete {
     padding-right: 0px;
 }
+
 .post-comment {
     padding-top: 0px;
     padding-right: 170px;

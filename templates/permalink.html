@@ -49,18 +49,25 @@
 <form method="post">
   <div class="post-likes post-update">
     <input type="image" name= "update_post" value="update_post" 
-      title="Click to update the post." src="/images/update.png" height="40px">
-        <input type = "hidden" name = "form_name" value = "update_post">
+      title="Click to update the post." src="/images/update.png" 
+        height="40px">
+    <input type = "hidden" name = "form_name" value = "update_post">
   </div>
 </form>
 <form method="post">
   <div class="post-likes post-delete">
     <input type="image" name= "delete_post" value="delete_post" 
-      title="Click to delete this post." src="/images/delete.png" height="45px">
-        <input type = "hidden" name = "form_name" value = "delete_post">
+      title="Click to delete this post." 
+      src="/images/delete.png" height="45px">
+    <input type = "hidden" name = "form_name" value = "delete_post">
   </div>
 </form>
 <form>
-  <div class = "error">{{error}}</div><div class = "message">{{confirmation}}</div>
+  <div class = "error">
+    {{error}}
+  </div>
+  <div class = "message">
+    {{confirmation}}
+  </div>
 </form>
 {% endblock %}

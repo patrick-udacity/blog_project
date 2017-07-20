@@ -133,11 +133,7 @@ def blog_key(name = 'default'):
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
-
-    #comments = db.TextProperty(required = False)
-
     comment_list = db.StringListProperty(required = True)
-
     author = db.StringProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
@@ -183,6 +179,8 @@ class PostPage(BlogHandler):
 
         if not post:
             self.error(404)
+            self.redirect('/blog')
+            
             return
 
         #Check to see if a user is logged in.
@@ -369,10 +367,7 @@ class PostPage(BlogHandler):
                     error = "You are not authorized to delete this post."
                     self.render("permalink.html", post = post, error = error)
                     return
-########################
-########################
-#running into issues here. I need to make the application refresh after deleting a post.
-#Also causes problems for a user if the owner deletes a post while attempting to view it.
+
         #Delete a post.
         elif self.request.get('form_name') == 'delete_yes':
             #Make sure updater is the author of the blog entry.
