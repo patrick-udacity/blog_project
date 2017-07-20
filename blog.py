@@ -133,11 +133,11 @@ def blog_key(name = 'default'):
 class Post(db.Model):
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
-    comments = db.TextProperty(required = False)
-    #########################################################   
-    #############Working on the editable comments issue here.
+
+    #comments = db.TextProperty(required = False)
+
     comment_list = db.StringListProperty(required = True)
-    #########################################################
+
     author = db.StringProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
@@ -165,7 +165,9 @@ class PostPage(BlogHandler):
         post = db.get(key)
 
         if not post:
-            self.error(404)
+            
+            #self.error(404)
+            self.redirect('/blog')
             return
 
         self.render("permalink.html", post = post)
@@ -175,7 +177,9 @@ class PostPage(BlogHandler):
         confirmation = ""
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
-        comment_list = []#This list will be used to extract an entity's comments.
+
+        #This list will be used to extract an entity's comments.
+        comment_list = []
 
         if not post:
             self.error(404)
@@ -272,6 +276,19 @@ class PostPage(BlogHandler):
         elif self.request.get('form_name') == 'comment':
             self.render("comment.html", post = post)
             return
+        
+        #Submit a comment for addition to an entity.
+        elif self.request.get('form_name') == 'submit_comment':
+            # The ^ character will be used as a delimiter
+            # in the stored comment list members.
+            signature = (str(self.user.name).upper()
+                + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
+            content = (signature +
+                str(self.request.get('comment_content')))
+            post.comment_list.append(content)
+            post.put()
+            self.render("permalink.html", post = post)
+            return
 
         #Initiate the update of a comment page.
         #Make sure updater is the author of the comment.
@@ -279,34 +296,24 @@ class PostPage(BlogHandler):
         elif self.request.get('form_name') == 'edit_comment':
             active_content  = self.request.get('active_comment')
             if self.user.name.upper() in active_content:      
-                #active_content  = self.request.get('active_comment')
                 self.render("edit_comment.html", post = post,
                     active_content = active_content.split('^',1)[1],
                     comment_object = active_content.split('^',1)[0])
                 return
             else:
-                error = self.user.name.upper() + ", you are not authorized to edit this comment."
+                error = self.user.name.upper() + (
+                    ", you are not authorized to edit this comment.")
                 self.render("permalink.html", post = post, error = error)
                 return
         
-        #Submit a comment for addition to an entity.
-        elif self.request.get('form_name') == 'submit_comment':
-            # The ^ character will be used as a delimiter in the stored comment list members.
-            signature = (str(self.user.name).upper()
-                + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
-            content = (signature +
-                str(self.request.get('comment_content')))
-            post.comments = str(post.comments).replace('None','') + content
-            post.comment_list.append(content)
-            post.put()
-            self.render("permalink.html", post = post)
-            return
-
         #Update an existing comment.
         elif self.request.get('form_name') == 'update_comment':
-            # The ^ character will be used as a delimiter in the stored comment list members.
+            # The ^ character will be used as a
+            #delimiter in the stored comment list members.
             comment_object  = self.request.get('comment_object')
-            #comment_index = post.comment_list.index(comment_object)
+
+            #Select the comment from list of comments
+            #by matching the comment text.
             comment_index = ([i for i, s in
                 enumerate(post.comment_list) if comment_object in s])
             
@@ -315,11 +322,34 @@ class PostPage(BlogHandler):
                 + str(time.strftime(" on %m/%d/%Y at %I:%M %p(GMT):" + "^")))
             content = (signature + comment_text)
             
-            #post.comments = str(post.comments).replace('None','') + content
             post.comment_list[comment_index[0]] = content
             post.put()
             self.render("permalink.html", post = post)
             return        
+
+        #Delete a comment.
+        #Make sure updater is the author of the comment.
+        #Confirm author 
+        elif self.request.get('form_name') == 'delete_comment':
+            comment_object  = self.request.get('comment_object')
+            if self.user.name.upper() in comment_object:
+                
+                #Select the comment from list of
+                #comments by matching the comment text.
+                comment_index = ([i for i, s in
+                    enumerate(post.comment_list) if comment_object in s])
+                     
+                #Delete the comment.
+                del post.comment_list[comment_index[0]]
+                post.put()
+                posts = Post.all().order('-created')
+                self.render('front.html', posts = posts)
+                return  
+            else:
+                error = self.user.name.upper() + (
+                    ", you are not authorized to edit this comment.")
+                self.render("permalink.html", post = post, error = error)
+                return        
 
         #Cancel comment submission.
         elif self.request.get('form_name') == 'cancel_comment':
@@ -339,7 +369,10 @@ class PostPage(BlogHandler):
                     error = "You are not authorized to delete this post."
                     self.render("permalink.html", post = post, error = error)
                     return
-
+########################
+########################
+#running into issues here. I need to make the application refresh after deleting a post.
+#Also causes problems for a user if the owner deletes a post while attempting to view it.
         #Delete a post.
         elif self.request.get('form_name') == 'delete_yes':
             #Make sure updater is the author of the blog entry.
@@ -347,7 +380,7 @@ class PostPage(BlogHandler):
             if self.user.name == post.author:
                 db.delete(key)
                 posts = Post.all().order('-created')
-                self.render('front.html', posts = posts)
+                self.redirect('/blog')
                 return
 
         #Deletion Cancelled.
@@ -403,7 +436,8 @@ def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
 
-#Signup for new account handler. This helps structure the account properties.
+#Signup for new account handler.
+#This helps structure the account properties.
 class Signup(BlogHandler):
     def get(self):
         self.render("signup-form.html")
